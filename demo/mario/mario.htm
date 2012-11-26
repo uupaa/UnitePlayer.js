@@ -1,0 +1,184 @@
+<!DOCTYPE html><html><head><meta charset="UTF-8" />
+<title>Mario DEMO</title>
+<script src="uni.js"></script>
+<script>
+window.Track0 = null; // main track (BGM), iOS Pseudo unity track
+window.Track1 = null; // sub track (S.E.)
+window.Track2 = null; // sub track (Jingle)
+window.canplayCallback = null;
+
+function init(iOSSimulate) {
+    if (!window.UnitePlayer ||
+        !window.UnitePlayer.ready) {
+        alert("Need iOS 4.0 and later, Android 2.3 and later");
+        return;
+    }
+    if (window.Track0) { // singleton
+        return;
+    }
+
+    var param = {
+            mp3:    "mario.mp3",
+            volume: 0.5,
+            preset: {
+                // --- BGM ---
+                BGM_Mute:           ["0:00", "0:10",   true],
+                BGM_OverWorld:      ["0:15", "0:53.2", true],
+                BGM_HarryUp:        ["1:00", "1:28.2", true, "1:02.88"],
+                // --- SE ---
+                SE_Jump:            ["2:00", "2:00.576"],
+                SE_HiJump:          ["2:02", "2:02.56"],
+                SE_Bump:            ["2:04", "2:04.22"],
+                SE_Kick:            ["2:06", "2:06.2"],
+                SE_Coin:            ["2:08", "2:08.98"],
+                SE_BrakeBlock:      ["2:10", "2:10.55"],
+                SE_FireBall:        ["2:12", "2:12.12"],
+                SE_Stomp:           ["2:14", "2:14.3"],
+                SE_1up:             ["2:16", "2:16.84"],
+                SE_PowerUp:         ["2:18", "2:19"],
+                SE_ItemGlow:        ["2:20", "2:20.57"],
+                SE_Pipe:            ["2:22", "2:22.77"],
+                SE_Vine:            ["2:24", "2:25.1"],
+                SE_Pole:            ["2:26", "2:27.1"],
+                SE_FireWorks:       ["2:28", "2:28.42"],
+                // --- Jingle ---
+                Z_KoopaFire:        ["2:40", "2:41.1"],
+                Z_KoopaFalls:       ["2:44", "2:45"],
+                Z_GameOver:         ["2:48", "2:52"],
+                Z_MarioDie:         ["2:54", "2:56.7"],
+                Z_Pause:            ["3:00", "3:00.8"],
+                Z_StageClear:       ["3:04", "3:09.49"],
+                Z_WorldClear:       ["3:12", "3:18.12"]
+            }
+        };
+
+    window.Track0 = new UnitePlayer(param, 0, function(evt, that, track, time, dur) {
+
+        log("track" + track, evt.type, time.toFixed(3), dur.toFixed(3));
+
+        if (evt.type === "canplay" && window.canplayCallback) {
+            window.canplayCallback();
+        }
+    });
+
+    if (!iOSSimulate) {
+        if (UnitePlayer.enableMultiTrack) {
+            // single audio
+            ;
+        } else {
+            // multi audio
+            window.Track1 =
+                    new UnitePlayer(param, 1, function(evt, that, track, time, dur) {
+                log("track" + track, evt.type, time.toFixed(3));
+            });
+            window.Track2 =
+                    new UnitePlayer(param, 2, function(evt, that, track, time, dur) {
+                log("track" + track, evt.type, time.toFixed(3));
+            });
+        }
+    }
+}
+
+function touchFirst() {
+    var btn1 = document.getElementById("play_btn1"),
+        btn2 = document.getElementById("play_btn2"),
+        btn3 = document.getElementById("play_btn3");
+
+    // btn1 -> btn2 -> btn3
+    btn1.style.display = "inline-block";
+    btn1.onclick = function() {
+        btn1.parentNode.removeChild(btn1);
+        btn2.style.display = "inline-block";
+        canplayCallback = function() {
+            btn2.parentNode.removeChild(btn2);
+            btn3.style.display = "inline-block";
+            setTimeout(function() {
+                btn3.parentNode.removeChild(btn3);
+            }, 1000);
+        };
+        init(0);
+    };
+}
+
+function preset(name, track) {
+    switch (track) {
+    case 2: if (window.Track2) {
+                window.Track2.preset(name);
+                break;
+            }
+    case 1: if (window.Track1) {
+                window.Track1.preset(name);
+                break;
+            }
+    case 0: window.Track0.preset(name);
+    }
+}
+
+if (window.UnitePlayer.needTouchFirst) {
+    document.addEventListener("DOMContentLoaded", function() {
+        document.getElementById("init_btn").style.display = "none";
+        touchFirst();
+    }, false);
+}
+
+// --- logger ---
+function log(args) {
+    var id = "logger", d = document, n,
+        parentNode = d.getElementById(id) ||
+                     d.body.appendChild(n = d.createElement("div"), n.id = "logger", n);
+        node = d.createElement("div");
+
+    if (parentNode.childNodes.length > 100) {
+        parentNode.innerHTML = "";
+    }
+    node.textContent = Array.prototype.slice.apply(arguments).join(" ");
+    parentNode.appendChild(node);
+}
+</script>
+</head><body>
+<div id="init_btn">
+  <input type="button" value="init" onclick="init(0)"></input>
+  <input type="button" value="init( iOS Simulate )" onclick="init(1)"></input> | 
+</div>
+<hr />Track 0 (BGM):
+<input type="button" value="BGM Mute" onclick="preset('BGM_Mute', 0)"></input>
+<input type="button" value="OverWorld" onclick="preset('BGM_OverWorld', 0)"></input>
+<input type="button" value="HarryUp" onclick="preset('BGM_HarryUp', 0)"></input> | 
+<input type="button" class="pconly" value="mute" onclick="Track0.mute()"></input>
+<input type="button" class="pconly" value="vol-0.1" onclick="Track0.volume(0.1, '-')"></input>
+<input type="button" class="pconly" value="vol+0.1" onclick="Track0.volume(0.1, '+')"></input>
+<input type="button" value="seek-10" onclick="Track0.seek(10, '-')"></input>
+<input type="button" value="seek+10" onclick="Track0.seek(10, '+')"></input>
+
+<hr />Track 1 (SE):
+<input type="button" value="Jump" onclick="preset('SE_Jump', 1)"></input>
+<input type="button" value="HiJump" onclick="preset('SE_HiJump', 1)"></input>
+<input type="button" value="Bump" onclick="preset('SE_Bump', 1)"></input>
+<input type="button" value="Kick" onclick="preset('SE_Kick', 1)"></input>
+<input type="button" value="Coin" onclick="preset('SE_Coin', 1)"></input>
+<input type="button" value="BrakeBlock" onclick="preset('SE_BrakeBlock', 1)"></input>
+<input type="button" value="FireBall" onclick="preset('SE_FireBall', 1)"></input>
+<input type="button" value="Stomp(踏みつけ)" onclick="preset('SE_Stomp', 1)"></input>
+<input type="button" value="1up" onclick="preset('SE_1up', 1)"></input>
+<input type="button" value="PowerUp" onclick="preset('SE_PowerUp', 1)"></input>
+<input type="button" value="ItemGlow" onclick="preset('SE_ItemGlow', 1)"></input>
+<input type="button" value="Pipe" onclick="preset('SE_Pipe', 1)"></input>
+<input type="button" value="Vine" onclick="preset('SE_Vine', 1)"></input>
+<input type="button" value="Pole" onclick="preset('SE_Pole', 1)"></input>
+<input type="button" value="FireWorks(花火/キラー)" onclick="preset('SE_FireWorks', 1)"></input>
+<hr />Track 2 (Jingle):
+<input type="button" value="Z_KoopaFire" onclick="preset('Z_KoopaFire', 2)"></input>
+<input type="button" value="Z_KoopaFalls" onclick="preset('Z_KoopaFalls', 2)"></input>
+<input type="button" value="Z_GameOver" onclick="preset('BGM_Mute', 0);preset('Z_GameOver', 2)"></input>
+<input type="button" value="Z_MarioDie" onclick="preset('BGM_Mute', 0);preset('Z_MarioDie', 2)"></input>
+<input type="button" value="Z_Pause" onclick="preset('BGM_Mute', 0);preset('Z_Pause', 2)"></input>
+<input type="button" value="Z_StageClear" onclick="preset('BGM_Mute', 0);preset('Z_StageClear', 2)"></input>
+<input type="button" value="Z_WorldClear" onclick="preset('BGM_Mute', 0);preset('Z_WorldClear', 2)"></input>
+<hr />
+
+<img id="play_btn1" src="./img/play1.png" width="128" height="128" style="position:absolute;top:0;left:0;display:none" />
+<img id="play_btn2" src="./img/play2.png" width="128" height="128" style="position:absolute;top:0;left:0;display:none" />
+<img id="play_btn3" src="./img/play3.png" width="128" height="128" style="position:absolute;top:0;left:0;display:none" />
+
+<div id="logger"></div>
+</body></html>
